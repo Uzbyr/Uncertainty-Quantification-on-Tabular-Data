@@ -41,5 +41,5 @@ for dataset_id, models in results.items():
 
 df = pd.DataFrame(rows)
 
-print(df.to_string(max_cols=None, max_rows=20))
+# print(df.to_string(max_cols=None, max_rows=20))
 df.to_csv("results.csv")
