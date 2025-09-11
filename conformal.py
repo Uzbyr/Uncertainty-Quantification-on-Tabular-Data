@@ -21,25 +21,9 @@ openml_datasets = [
         31,      # credit-g
         188,     # eucalyptus
 ]
-results = {}
 
 for dataset_id in openml_datasets:
     print(f"Dataset id: {dataset_id}")
-    results[dataset_id] = evaluate_on_openml(dataset_id, device)
-# print(results)
-
-rows = []
-for dataset_id, models in results.items():
-    for model_name, content in models.items():
-        row = {
-            "dataset_id": dataset_id,
-            "model": model_name,
-            **content["metrics"],
-            # **content["best_params"]
-        }
-        rows.append(row)
-
-df = pd.DataFrame(rows)
-
-# print(df.to_string(max_cols=None, max_rows=20))
-df.to_csv("results.csv")
+    results = evaluate_on_openml(dataset_id, device)
+    df = pd.DataFrame(results)
+    df.to_csv(f"results_{seed}_{dataset_id}.csv", index=False)

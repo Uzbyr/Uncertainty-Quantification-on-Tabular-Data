@@ -58,3 +58,8 @@ print("-" * 95)
 for folder_name, task_type, n_num, n_cat, train_size, val_size, test_size, id in results:
     print(f"{folder_name[:25]:25} {task_type:15} {f'{n_num}/{n_cat}':15} {f'{train_size}/{val_size}/{test_size}':20} {id:10}")
 
+# print("[", end="")
+# for folder_name, task_type, n_num, n_cat, train_size, val_size, test_size, id in results:
+#       print(id, end=",")
+# print("]")
+

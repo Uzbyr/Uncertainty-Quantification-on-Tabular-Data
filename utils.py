@@ -2,7 +2,6 @@ import os
 from typing import Optional
 
 import warnings
-import cupy as cp
 import numpy as np
 
 from tabpfn import TabPFNClassifier
@@ -15,7 +14,8 @@ from tabicl import TabICLClassifier
 from sklearn.utils import Bunch
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, f1_score
 from mapie.utils import train_conformalize_test_split
 from mapie.classification import SplitConformalClassifier, CrossConformalClassifier
 from mapie.metrics.classification import (classification_coverage_score,
@@ -62,10 +62,11 @@ def evaluate_classification(y_pred, y_test, y_pred_set):
 
     cr = classification_coverage_score(y_test, y_pred_set)
     cmwc = classification_mean_width_score(y_pred_set)
-    ssc = classification_ssc_score(y_test, y_pred_set)
+    sscs = classification_ssc_score(y_test, y_pred_set)
 
     # return {"accuracy": acc, "f1_score": f1, "auc": auc.item(), "cr": cr[0].item()}
-    return {"accuracy": acc, "f1_score": f1, "cr": cr[0].item(), "cmwc": cmwc[0].item(), "ssc": ssc[0].item()}
+    return {"accuracy": acc, "f1_score": f1, "cr": cr[0].item(), "cmwc": cmwc[0].item(), "sscs": sscs[0].item()}
+
 
 def clean_col(col):
     return col.replace('<=', '_le_').replace('<', '_lt_').replace('[', '_').replace(']', '_')
@@ -113,6 +114,11 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
     #     devices = device.split(":")[1]
     #     task_type = "GPU"
 
+    if len(np.unique(y)) == 2:
+        solver = "liblinear"
+    else:
+        solver = "lbfgs"
+
     models = {
         "LightGBM": (LGBMClassifier(random_state=seed, force_col_wise=True, verbose=-100),
                         {"n_estimators": [100, 300], "max_depth": [-1, 6, 10], "max_bin": [255, 128]}),
@@ -120,13 +126,14 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
                         {"iterations": [200, 500], "depth": [4, 6]}),
         "XGBoost": (XGBClassifier(device=device, eval_metric="logloss", random_state=seed, verbosity=0),
                         {"n_estimators": [200, 500], "max_depth": [4, 6]}),
+        "LogisticRegression": (LogisticRegression(solver=solver, random_state=seed), None),
         "TabICL": (TabICLClassifier(device=device, n_estimators=1, random_state=seed), None),
         "TabPFN": (TabPFNClassifier(device=device, n_estimators=1, random_state=seed), None),
     }
 
     for name, (model, param_grid) in models.items():
         print(f"Training {name}")
-        params = None
+        params = {}
         best_model = model
 
         if param_grid is not None:
@@ -143,30 +150,26 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
         else:
             best_model.fit(X_train, y_train)
 
-        # mapie_classifier = SplitConformalClassifier(
-        #     estimator=best_model, confidence_level=confidence_level,
-        #     prefit=True, conformity_score=score,
-        # )
         if X_conformalize.shape[0] > 200:
             mapie_clf = SplitConformalClassifier(
                 estimator=best_model, confidence_level=confidence_level,
-                prefit=True, conformity_score=score,
+                prefit=True, conformity_score=score, random_state=seed,
             )
             mapie_clf.conformalize(X_conformalize, y_conformalize)
         else:
             mapie_clf = CrossConformalClassifier(
                 estimator=best_model, confidence_level=confidence_level,
-                conformity_score=score,
+                conformity_score=score, random_state=seed,
             )
             mapie_clf.fit_conformalize(X_conformalize, y_conformalize)
 
-        # mapie_classifier.conformalize(X_conformalize, y_conformalize)
         y_pred, y_pred_set = mapie_clf.predict_set(X_test)
         test_metrics = evaluate_classification(y_pred, y_test, y_pred_set)
 
         results[name] = {
-            "best_params": params,
-            "metrics": test_metrics
+            "dataset_id": dataset_id,
+            **params,
+            **test_metrics,
         }
 
     return results
