@@ -1,7 +1,7 @@
-import os
+import os, random, warnings
 from typing import Optional
 
-import warnings
+import torch
 import numpy as np
 
 from tabpfn import TabPFNClassifier
@@ -30,6 +30,33 @@ warnings.simplefilter(action="ignore", category=UserWarning)
 
 
 DATA_DIR = '/content/MyDrive/MyDrive/Datasets/Rain_in_Australia'
+
+
+def set_seed(seed: int = 42):
+    """
+    Sets the random seed for various libraries to ensure reproducibility.
+    """
+    # Set seed for Python's built-in random module
+    random.seed(seed)
+
+    # Set seed for NumPy
+    np.random.seed(seed)
+
+    # Set seed for PyTorch on CPU and CUDA
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # For multi-GPU setups
+
+    # # Configure PyTorch to use deterministic algorithms
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = False
+
+    # Set the PYTHONHASHSEED environment variable
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+    print(f"Random seed set to {seed}")
+
 
 def load(name) -> Optional[np.ndarray]:
     p = os.path.join(DATA_DIR, name)
