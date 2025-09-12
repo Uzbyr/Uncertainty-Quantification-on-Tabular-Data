@@ -61,5 +61,5 @@ for dataset_id in openml_datasets:
     ]
     df_all.to_csv(f"results_dataset_{dataset_id}_all_seeds.csv", index=False)
     summary.to_csv(f"results_dataset_{dataset_id}_summary.csv", index=False)
-    print(f"Saved: results_dataset_{dataset_id}_all_seeds.csv e results_dataset_{dataset_id}_summary.csv")
+    print(f"Salvos: results_dataset_{dataset_id}_all_seeds.csv e results_dataset_{dataset_id}_summary.csv")
 

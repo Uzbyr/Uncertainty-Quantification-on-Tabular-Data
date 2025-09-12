@@ -12,6 +12,8 @@ from skrub import TableVectorizer
 from tabicl import TabICLClassifier
 
 from sklearn.utils import Bunch
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
@@ -150,7 +152,13 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
         #"LightGBM": (LGBMClassifier(random_state=seed, force_col_wise=True, verbose=-100), {"n_estimators": [100, 300], "max_depth": [-1, 6, 10], "max_bin": [255, 128]}),
         #"CatBoost": (CatBoostClassifier(task_type=task_type, devices=devices, verbose=False, random_state=seed, allow_writing_files=False), {"iterations": [200, 500], "depth": [4, 6]}),
         #"XGBoost": (XGBClassifier(device=device, eval_metric="logloss", random_state=seed, verbosity=0),{"n_estimators": [200, 500], "max_depth": [4, 6]}),
-        #"LogisticRegression": (LogisticRegression(solver=solver, random_state=seed), None),
+        "LogisticRegression": (
+        make_pipeline(
+            SimpleImputer(strategy="mean"),
+            LogisticRegression(solver=solver, random_state=seed, max_iter=1000)
+        ),
+        None
+    ),
         "TabICL": (TabICLClassifier(device=device, n_estimators=1, random_state=seed), None),
         "TabPFN": (TabPFNClassifier(device=device, n_estimators=1, random_state=seed), None),
     }
