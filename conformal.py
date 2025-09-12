@@ -25,8 +25,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else (
 print("Using device:", device)
 
 out_folder = "results"
-if not os.path.exists(out_folder): os.makedirs(out_folder, exist_ok=True)
-first = True
+if not os.path.exists(out_folder):
+    os.makedirs(out_folder, exist_ok=True)
+first = False
 
 openml_datasets = [
         1479,    # hill-valley
@@ -36,6 +37,11 @@ openml_datasets = [
         31,      # credit-g
         188,     # eucalyptus
 ]
+
+openml_datasets = [1509,45547,40668,41169,40685,255,]
+# [41027,41843,41865,41763,41718,1220,251,137,4135,184,1481,45067,45064,43889,45578,41671,6,1120,44089,44162,1046,1471,1476,45060,4534,45040,45074,32,1044,1053,1459,372,44122,45062,45023,375,4538,45553,41972,44130,1496,1507,803,42178,182,42889,1475,41145,44150,28,40499,30,1497,1489,44124,44186,41146,45075,40498,44489,44,1037,1043,42636,1557,41156,40708,
+# 40497,40707,40713,40677,40678,3,46,40670,41144,41143,40478,44091,301,1487,1548,45540,45539,45538,45537,45536,36,1067,44528,22,20,18,14,16,12,41721,41875,41882,40664,43442,45648,1491,1492,40646,
+# 1493,1501,1050,23,43895,1049,43812,185,41705,1589,42464,1068,1552,1444,54,458]
 
 # metric_cols = ["accuracy", "f1_score", "cr", "mwc", "sscs"]
 for dataset_id in openml_datasets:
@@ -47,7 +53,7 @@ for dataset_id in openml_datasets:
         # results_all_seeds.extend(results)
         df = pd.DataFrame(results)
         df.to_csv(f"results/{seed}_{dataset_id}.csv", index=False)
-        df.to_csv(f"results/raw.csv", index=False, header=first, mode='a')
+        df.to_csv("results/raw.csv", index=False, header=first, mode='a')
         first = False
 
     # df_all = pd.DataFrame(results_all_seeds)
@@ -67,4 +73,3 @@ for dataset_id in openml_datasets:
     # df_all.to_csv(f"results_dataset_{dataset_id}_all_seeds.csv", index=False)
     # summary.to_csv(f"results_dataset_{dataset_id}_summary.csv", index=False)
     # print(f"Salvos: results_dataset_{dataset_id}_all_seeds.csv e results_dataset_{dataset_id}_summary.csv")
-
