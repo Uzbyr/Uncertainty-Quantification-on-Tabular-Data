@@ -18,6 +18,7 @@ from sklearn.datasets import fetch_openml
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
+from rtdl_num_embeddings import PiecewiseLinearEmbeddings, compute_bins
 from mapie.utils import train_conformalize_test_split
 from mapie.classification import SplitConformalClassifier, CrossConformalClassifier
 from mapie.metrics.classification import (classification_coverage_score,
@@ -26,10 +27,12 @@ from mapie.metrics.classification import (classification_coverage_score,
 
 
 from pandas.errors import SettingWithCopyWarning
+
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 warnings.simplefilter(action="ignore", category=UserWarning)
 
+from TabM import TabMClassifer
 
 DATA_DIR = '/content/MyDrive/MyDrive/Datasets/Rain_in_Australia'
 
@@ -94,7 +97,7 @@ def evaluate_classification(y_pred, y_test, y_pred_set):
     sscs = classification_ssc_score(y_test, y_pred_set)
 
     # return {"accuracy": acc, "f1_score": f1, "auc": auc.item(), "cr": cr[0].item()}
-    return {"accuracy": acc, "f1_score": f1, "cr": cr[0].item(), "cmwc": cmwc[0].item(), "sscs": sscs[0].item()}
+    return {"accuracy": acc, "f1_score": f1, "cr": cr[0].item(), "cmwc": cmwc[0].item(), "sscs": sscs[0].item()} # type: ignore
 
 
 def clean_col(col):
@@ -102,7 +105,7 @@ def clean_col(col):
 
 
 def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, seed=42):
-    df: Bunch = fetch_openml(data_id=dataset_id, as_frame=True)
+    df: Bunch = fetch_openml(data_id=dataset_id, as_frame=True) # type: ignore
     X = df.data
     float64_cols = X.select_dtypes(np.float64).columns
     X[float64_cols] = X[float64_cols].astype(np.float32)
@@ -125,16 +128,15 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
     X_conformalize.columns = [clean_col(col) for col in X_conformalize.columns]
     X_test.columns = [clean_col(col) for col in X_test.columns]
 
-    # print(X_train.shape)
-    # print(X_conformalize.shape)
-    # print(X_test.shape)
-
-    # X_train = cp.array(X_train)
-    # X_conformalize = cp.array(X_conformalize)
-    # X_test = cp.array(X_test)
-    # y_train = cp.array(y_train)
-    # y_conformalize = cp.array(y_conformalize)
-    # y_test = cp.array(y_test)
+    n_classes = len(np.unique(y))
+    n_num_features = X_train.shape[1]
+    cat_cardinalities = []  # already numeric after vectorizer
+    num_embeddings = PiecewiseLinearEmbeddings(
+        compute_bins(torch.as_tensor(X_train.to_numpy()), n_bins=48),
+        d_embedding=16,
+        activation=False,
+        version='B',
+    )
 
     results = []
     devices = None
@@ -143,24 +145,30 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
     #     devices = device.split(":")[1]
     #     task_type = "GPU"
 
-    if len(np.unique(y)) == 2:
+    if n_classes == 2:
         solver = "liblinear"
     else:
         solver = "lbfgs"
 
     models = {
-        #"LightGBM": (LGBMClassifier(random_state=seed, force_col_wise=True, verbose=-100), {"n_estimators": [100, 300], "max_depth": [-1, 6, 10], "max_bin": [255, 128]}),
-        #"CatBoost": (CatBoostClassifier(task_type=task_type, devices=devices, verbose=False, random_state=seed, allow_writing_files=False), {"iterations": [200, 500], "depth": [4, 6]}),
-        #"XGBoost": (XGBClassifier(device=device, eval_metric="logloss", random_state=seed, verbosity=0),{"n_estimators": [200, 500], "max_depth": [4, 6]}),
+        "LightGBM": (LGBMClassifier(random_state=seed, force_col_wise=True, verbose=-100),
+                        {"n_estimators": [100, 300], "max_depth": [-1, 6, 10], "max_bin": [255, 128]}),
+        "CatBoost": (CatBoostClassifier(task_type=task_type, devices=devices, verbose=False, random_state=seed, allow_writing_files=False),
+                        {"iterations": [200, 500], "depth": [4, 6]}),
+        "XGBoost": (XGBClassifier(device=device, eval_metric="logloss", random_state=seed, verbosity=0),
+                        {"n_estimators": [200, 500], "max_depth": [4, 6]}),
         "LogisticRegression": (
-        make_pipeline(
-            SimpleImputer(strategy="mean"),
-            LogisticRegression(solver=solver, random_state=seed, max_iter=1000)
+            make_pipeline(
+                SimpleImputer(strategy="mean"),
+                LogisticRegression(solver=solver, random_state=seed, max_iter=1000)
+            ),
+            None
         ),
-        None
-    ),
         "TabICL": (TabICLClassifier(device=device, n_estimators=1, random_state=seed), None),
         "TabPFN": (TabPFNClassifier(device=device, n_estimators=1, random_state=seed), None),
+        "TabM": (TabMClassifer(device=device, n_num_features=n_num_features,
+                               cat_cardinalities=cat_cardinalities, n_classes=n_classes,
+                               num_embeddings=num_embeddings, train_size=X_train.shape[0]), None),
     }
 
     for name, (model, param_grid) in models.items():
@@ -180,7 +188,10 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
             best_model = search.best_estimator_
             params = search.best_params_
         else:
-            best_model.fit(X_train, y_train)
+            if name == "TabM":
+                best_model.fit(np.concat([X_train, X_conformalize], axis=0), np.concat([y_train, y_conformalize], axis=0))
+            else:
+                best_model.fit(X_train, y_train)
 
         if X_conformalize.shape[0] > 200:
             mapie_clf = SplitConformalClassifier(
@@ -193,7 +204,7 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
                 estimator=best_model, confidence_level=confidence_level,
                 conformity_score=score, random_state=seed,
             )
-            mapie_clf.fit_conformalize(X_conformalize, y_conformalize)
+            mapie_clf.fit_conformalize(np.concat([X_train, X_conformalize], axis=0), np.concat([y_train, y_conformalize], axis=0))
 
         y_pred, y_pred_set = mapie_clf.predict_set(X_test)
         test_metrics = evaluate_classification(y_pred, y_test, y_pred_set)
