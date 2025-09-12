@@ -26,18 +26,40 @@ device = "cuda:0" if torch.cuda.is_available() else (
 print("Using device:", device)
 
 openml_datasets = [
-        1479,    # hill-valley
-        43946,   # Eye movements
+        #1479,    # hill-valley
+        #43946,   # Eye movements
         15,      # breast-w
         997,     # Eye balance-scale
-        31,      # credit-g
-        188,     # eucalyptus
+        #31,      # credit-g
+        #188,     # eucalyptus
 ]
 
-for seed in seeds:
-    set_seed(seed)
-    for dataset_id in openml_datasets:
+metric_cols = ["accuracy", "f1_score", "cr", "cmwc", "sscs"]
+for dataset_id in openml_datasets:
+    results_all_seeds = []
+    for seed in seeds:
+        set_seed(seed)
         print(f"Dataset id: {dataset_id}")
-        results = evaluate_on_openml(dataset_id, device)
+        results = evaluate_on_openml(dataset_id, device, seed=seed)
+        results_all_seeds.extend(results)
         df = pd.DataFrame(results)
         df.to_csv(f"results_{seed}_{dataset_id}.csv", index=False)
+        
+    df_all = pd.DataFrame(results_all_seeds)
+    for c in metric_cols:
+        if c in df_all.columns:
+            df_all[c] = pd.to_numeric(df_all[c], errors="coerce")
+    summary = (
+        df_all
+        .groupby(["dataset_id", "model"], dropna=False)[[c for c in metric_cols if c in df_all.columns]]
+        .agg(["mean", "std"])
+        .reset_index()
+    )
+    summary.columns = [
+        "_".join([str(x) for x in col if x]) if isinstance(col, tuple) else col
+        for col in summary.columns
+    ]
+    df_all.to_csv(f"results_dataset_{dataset_id}_all_seeds.csv", index=False)
+    summary.to_csv(f"results_dataset_{dataset_id}_summary.csv", index=False)
+    print(f"Saved: results_dataset_{dataset_id}_all_seeds.csv e results_dataset_{dataset_id}_summary.csv")
+

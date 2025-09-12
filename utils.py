@@ -134,7 +134,7 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
     # y_conformalize = cp.array(y_conformalize)
     # y_test = cp.array(y_test)
 
-    results = {}
+    results = []
     devices = None
     task_type = None
     # if "cuda" in device:
@@ -147,13 +147,10 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
         solver = "lbfgs"
 
     models = {
-        "LightGBM": (LGBMClassifier(random_state=seed, force_col_wise=True, verbose=-100),
-                        {"n_estimators": [100, 300], "max_depth": [-1, 6, 10], "max_bin": [255, 128]}),
-        "CatBoost": (CatBoostClassifier(task_type=task_type, devices=devices, verbose=False, random_state=seed, allow_writing_files=False),
-                        {"iterations": [200, 500], "depth": [4, 6]}),
-        "XGBoost": (XGBClassifier(device=device, eval_metric="logloss", random_state=seed, verbosity=0),
-                        {"n_estimators": [200, 500], "max_depth": [4, 6]}),
-        "LogisticRegression": (LogisticRegression(solver=solver, random_state=seed), None),
+        #"LightGBM": (LGBMClassifier(random_state=seed, force_col_wise=True, verbose=-100), {"n_estimators": [100, 300], "max_depth": [-1, 6, 10], "max_bin": [255, 128]}),
+        #"CatBoost": (CatBoostClassifier(task_type=task_type, devices=devices, verbose=False, random_state=seed, allow_writing_files=False), {"iterations": [200, 500], "depth": [4, 6]}),
+        #"XGBoost": (XGBClassifier(device=device, eval_metric="logloss", random_state=seed, verbosity=0),{"n_estimators": [200, 500], "max_depth": [4, 6]}),
+        #"LogisticRegression": (LogisticRegression(solver=solver, random_state=seed), None),
         "TabICL": (TabICLClassifier(device=device, n_estimators=1, random_state=seed), None),
         "TabPFN": (TabPFNClassifier(device=device, n_estimators=1, random_state=seed), None),
     }
@@ -192,11 +189,13 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
 
         y_pred, y_pred_set = mapie_clf.predict_set(X_test)
         test_metrics = evaluate_classification(y_pred, y_test, y_pred_set)
-
-        results[name] = {
+            #{**results_tabicl, **results_tabpfn}
+        results.append({
             "dataset_id": dataset_id,
+            "seed": seed,
+            "model": name,
             **params,
             **test_metrics,
-        }
+        })
 
     return results
