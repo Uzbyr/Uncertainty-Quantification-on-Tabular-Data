@@ -93,11 +93,11 @@ def evaluate_classification(y_pred, y_test, y_pred_set):
     #     auc = roc_auc_score(y_test, probs, multi_class="ovo", average="weighted")
 
     cr = classification_coverage_score(y_test, y_pred_set)
-    cmwc = classification_mean_width_score(y_pred_set)
+    mwc = classification_mean_width_score(y_pred_set)
     sscs = classification_ssc_score(y_test, y_pred_set)
 
     # return {"accuracy": acc, "f1_score": f1, "auc": auc.item(), "cr": cr[0].item()}
-    return {"accuracy": acc, "f1_score": f1, "cr": cr[0].item(), "cmwc": cmwc[0].item(), "sscs": sscs[0].item()} # type: ignore
+    return {"accuracy": acc, "f1_score": f1, "cr": cr[0].item(), "mwc": mwc[0].item(), "sscs": sscs[0].item()} # type: ignore
 
 
 def clean_col(col):
@@ -132,7 +132,7 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
     n_num_features = X_train.shape[1]
     cat_cardinalities = []  # already numeric after vectorizer
     num_embeddings = PiecewiseLinearEmbeddings(
-        compute_bins(torch.as_tensor(SimpleImputer().fit_transform(X_train.to_numpy())), n_bins=48),
+        compute_bins(torch.as_tensor(SimpleImputer().fit_transform(np.asarray(X_train))), n_bins=48),
         d_embedding=16,
         activation=False,
         version='B',
@@ -210,13 +210,13 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
 
         y_pred, y_pred_set = mapie_clf.predict_set(X_test)
         test_metrics = evaluate_classification(y_pred, y_test, y_pred_set)
-            #{**results_tabicl, **results_tabpfn}
+
         results.append({
             "dataset_id": dataset_id,
             "seed": seed,
             "model": name,
-            **params,
             **test_metrics,
+            **params,
         })
 
     return results

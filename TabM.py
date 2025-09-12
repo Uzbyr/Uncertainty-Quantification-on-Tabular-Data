@@ -62,12 +62,10 @@ class TabMClassifer(BaseEstimator, ClassifierMixin):
         X_train = self._imputer.transform(X_train)
         X_val = self._imputer.transform(X_val)
 
-        return self
-
         y_train = y_trainval[:self.train_size]
         y_val = y_trainval[self.train_size:]
-        X_train = torch.as_tensor(X_train.to_numpy(), device=self.device)
-        X_val = torch.as_tensor(X_val.to_numpy(), device=self.device)
+        X_train = torch.as_tensor(X_train, device=self.device)
+        X_val = torch.as_tensor(X_val, device=self.device)
         y_train = torch.as_tensor(y_train, dtype=torch.long, device=self.device)
         y_val = torch.as_tensor(y_val, dtype=torch.long, device=self.device)
         # epoch_size = math.ceil(train_size / self.batch_size)
@@ -77,11 +75,11 @@ class TabMClassifer(BaseEstimator, ClassifierMixin):
         for epoch in range(self.n_epochs):
             batches = (
                 # Create one standard batch sequence.
-                torch.randperm(train_size, device=self.device).split(self.batch_size)
+                torch.randperm(self.train_size, device=self.device).split(self.batch_size)
                 if self.share_training_batches
                 # Create k independent batch sequences.
                 else (
-                    torch.rand((train_size, self.model.backbone.k), device=self.device)
+                    torch.rand((self.train_size, self.model.backbone.k), device=self.device)
                     .argsort(dim=0)
                     .split(self.batch_size, dim=0)
                 )
