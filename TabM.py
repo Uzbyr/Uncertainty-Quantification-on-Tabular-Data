@@ -4,6 +4,7 @@ from typing import Any, Optional
 from typing import Optional
 
 import scipy.special
+from sklearn.impute import SimpleImputer
 import sklearn.metrics
 import pandas as pd
 import numpy as np
@@ -53,10 +54,16 @@ class TabMClassifer(BaseEstimator, ClassifierMixin):
     def fit(self, X_trainval, y_trainval):
         self.classes_ = np.unique(y_trainval)
         self._is_fitted = True
-        return self
 
         X_train = X_trainval[:self.train_size]
         X_val = X_trainval[self.train_size:]
+
+        self._imputer = SimpleImputer().fit(X_train)
+        X_train = self._imputer.transform(X_train)
+        X_val = self._imputer.transform(X_val)
+
+        return self
+
         y_train = y_trainval[:self.train_size]
         y_val = y_trainval[self.train_size:]
         X_train = torch.as_tensor(X_train.to_numpy(), device=self.device)
@@ -124,6 +131,7 @@ class TabMClassifer(BaseEstimator, ClassifierMixin):
     def predict_proba(self, X):
         self.model.load_state_dict(self.best_checkpoint['model'])
         self.model.eval()
+        X = self._imputer.transform(X)
         with torch.no_grad():
             if isinstance(X, pd.DataFrame):
                 X = X.to_numpy()

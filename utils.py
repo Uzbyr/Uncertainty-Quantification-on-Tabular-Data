@@ -115,24 +115,24 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
     else:
         y = df.target.to_numpy()
 
-    X_train, X_conformalize, X_test, y_train, y_conformalize, y_test = train_conformalize_test_split(
+    X_train, X_val, X_test, y_train, y_val, y_test = train_conformalize_test_split(
         X, y, train_size=0.5, conformalize_size=0.3, test_size=0.2, random_state=seed,
     )
 
     vectorizer = TableVectorizer()
     X_train = vectorizer.fit_transform(X_train)
-    X_conformalize = vectorizer.transform(X_conformalize)
+    X_val = vectorizer.transform(X_val)
     X_test = vectorizer.transform(X_test)
 
     X_train.columns = [clean_col(col) for col in X_train.columns]
-    X_conformalize.columns = [clean_col(col) for col in X_conformalize.columns]
+    X_val.columns = [clean_col(col) for col in X_val.columns]
     X_test.columns = [clean_col(col) for col in X_test.columns]
 
     n_classes = len(np.unique(y))
     n_num_features = X_train.shape[1]
     cat_cardinalities = []  # already numeric after vectorizer
     num_embeddings = PiecewiseLinearEmbeddings(
-        compute_bins(torch.as_tensor(X_train.to_numpy()), n_bins=48),
+        compute_bins(torch.as_tensor(SimpleImputer().fit_transform(X_train.to_numpy())), n_bins=48),
         d_embedding=16,
         activation=False,
         version='B',
@@ -155,7 +155,7 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
                         {"n_estimators": [100, 300], "max_depth": [-1, 6, 10], "max_bin": [255, 128]}),
         "CatBoost": (CatBoostClassifier(task_type=task_type, devices=devices, verbose=False, random_state=seed, allow_writing_files=False),
                         {"iterations": [200, 500], "depth": [4, 6]}),
-        "XGBoost": (XGBClassifier(device=device, eval_metric="logloss", random_state=seed, verbosity=0),
+        "XGBoost": (XGBClassifier(device=device.type, eval_metric="logloss", random_state=seed, verbosity=0),
                         {"n_estimators": [200, 500], "max_depth": [4, 6]}),
         "LogisticRegression": (
             make_pipeline(
@@ -189,22 +189,24 @@ def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, s
             params = search.best_params_
         else:
             if name == "TabM":
-                best_model.fit(np.concat([X_train, X_conformalize], axis=0), np.concat([y_train, y_conformalize], axis=0))
+                best_model.fit(np.concat([X_train, X_val], axis=0),
+                               np.concat([y_train, y_val], axis=0))
             else:
                 best_model.fit(X_train, y_train)
 
-        if X_conformalize.shape[0] > 200:
+        if X_val.shape[0] > 200:
             mapie_clf = SplitConformalClassifier(
                 estimator=best_model, confidence_level=confidence_level,
                 prefit=True, conformity_score=score, random_state=seed,
             )
-            mapie_clf.conformalize(X_conformalize, y_conformalize)
+            mapie_clf.conformalize(X_val, y_val)
         else:
             mapie_clf = CrossConformalClassifier(
                 estimator=best_model, confidence_level=confidence_level,
                 conformity_score=score, random_state=seed,
             )
-            mapie_clf.fit_conformalize(np.concat([X_train, X_conformalize], axis=0), np.concat([y_train, y_conformalize], axis=0))
+            mapie_clf.fit_conformalize(np.concat([X_train, X_val], axis=0),
+                                       np.concat([y_train, y_val], axis=0))
 
         y_pred, y_pred_set = mapie_clf.predict_set(X_test)
         test_metrics = evaluate_classification(y_pred, y_test, y_pred_set)

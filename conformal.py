@@ -1,3 +1,4 @@
+import os
 import torch
 import numpy as np
 import pandas as pd
@@ -23,25 +24,28 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else (
 ))
 print("Using device:", device)
 
+out_folder = "results"
+if not os.path.exists(out_folder): os.makedirs(out_folder, exist_ok=True)
+
 openml_datasets = [
-        # 1479,    # hill-valley
-        # 43946,   # Eye movements
+        1479,    # hill-valley
+        43946,   # Eye movements
         15,      # breast-w
         997,     # Eye balance-scale
-        # 31,      # credit-g
+        31,      # credit-g
         188,     # eucalyptus
 ]
 
 metric_cols = ["accuracy", "f1_score", "cr", "cmwc", "sscs"]
 for dataset_id in openml_datasets:
+    print(f"Dataset id: {dataset_id}")
     results_all_seeds = []
     for seed in seeds:
         set_seed(seed)
-        print(f"Dataset id: {dataset_id}")
         results = evaluate_on_openml(dataset_id, device, seed=seed)
         results_all_seeds.extend(results)
         df = pd.DataFrame(results)
-        df.to_csv(f"results_{seed}_{dataset_id}.csv", index=False)
+        df.to_csv(f"results/{seed}_{dataset_id}.csv", index=False)
 
     # df_all = pd.DataFrame(results_all_seeds)
     # for c in metric_cols:
