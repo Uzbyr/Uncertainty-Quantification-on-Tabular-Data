@@ -32,40 +32,40 @@ if not os.path.exists(out_folder):
 first = False
 
 openml_datasets = [
-    # 1479, 43946, 15, 997,
-    # 31, 188, 1046, 1471,
-    # 1476, 45060, 4534, 32
-    # 45040, 45074, 1044,
-    # 1053, 1459, 44122,
-    # 45062, 45023, 375,
-    # 4538, 45553, 41972,
-    # 44130, 1496, 1507,
-    # 803, 182, 42889, 44
-    # 1475, 44150, 458, 30,
-    # 1497, 1489, 44124,
-    # 44186, 41146, 44489,
-    # 1037, 42636, 1557,
-    # 28, 1043, 41156 # X columns with only one distinct value
-    # 40708, 40497    # X columns with only one distinct value
-    # 40707, 40713, 40677,
-    # 40678, 3, 46,
-    # 40670,          # high gpu usage
-    # 41145,          # high gpu usage
-    # 45075,          # classes [-1, 1] instead of [0, 1]
-    # 42178,          # y is an object instead of a category
-    # 1589,           # as_frame fails -> ARFF dataset - Compressed Sparse Row
-    # 41144, 41143, 40478,
-    # 44091, 1487, 1548,
-    # 45540, 45539, 45538,
-    # 45537, 45536, 44528,
-    # 36, 1067, 22,
-    # 18, 14, 16, 12,
-    # 41721, 41875, 41882,
-    # 40664, 43442, 45648,
-    # 40646, 42464, 1501,
-    # 23, 1050, 54, 185,
-    # 43895, 1049, 43812,
-    # 1068, 1552, 1444,
+    1479, 43946, 15, 997,
+    31, 188, 1046, 1471,
+    1476, 45060, 4534, 32,
+    45040, 45074, 1044,
+    1053, 1459, 44122,
+    45062, 45023, 375,
+    4538, 45553, 41972,
+    44130, 1496, 1507,
+    803, 182, 42889, 44,
+    1475, 44150, 458, 30,
+    1497, 1489, 44124,
+    44186, 41146, 44489,
+    1037, 42636, 1557,
+    28, 1043, 41156, # X columns with only one distinct value
+    40708, 40497,    # X columns with only one distinct value
+    40707, 40713, 40677,
+    40678, 3, 46,
+    40670,          # high gpu usage
+    41145,          # high gpu usage
+    45075,          # classes [-1, 1] instead of [0, 1]
+    42178,          # y is an object instead of a category
+    1589,           # as_frame fails -> ARFF dataset - Compressed Sparse Row
+    41144, 41143, 40478,
+    44091, 1487, 1548,
+    45540, 45539, 45538,
+    45537, 45536, 44528,
+    36, 1067, 22,
+    18, 14, 16, 12,
+    41721, 41875, 41882,
+    40664, 43442, 45648,
+    40646, 42464, 1501,
+    23, 1050, 54, 185,
+    43895, 1049, 43812,
+    1068, 1552, 1444,
     # 372,    # n_classes (y_true) and dimension of y_score is not matching -> error spliting the data
     # 1491,   # n_classes (y_true) and dimension of y_score is not matching -> error spliting the data
     # 1492,   # n_classes (y_true) and dimension of y_score is not matching -> error spliting the data
