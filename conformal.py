@@ -53,7 +53,7 @@ openml_datasets = [
     # 41145,          # high gpu usage
     # 45075,          # classes [-1, 1] instead of [0, 1]
     # 42178,          # y is an object instead of a category
-    # 1589,     # as_frame fails -> ARFF dataset - Compressed Sparse Row
+    # 1589,           # as_frame fails -> ARFF dataset - Compressed Sparse Row
     # 41144, 41143, 40478,
     # 44091, 1487, 1548,
     # 45540, 45539, 45538,
@@ -66,11 +66,11 @@ openml_datasets = [
     # 23, 1050, 54, 185,
     # 43895, 1049, 43812,
     # 1068, 1552, 1444,
-    # 372,    # n_classes (y_true) and dimension of y_score is not matching
-    # 1491,   # n_classes (y_true) and dimension of y_score is not matching
-    # 1492,   # n_classes (y_true) and dimension of y_score is not matching
+    # 372,    # n_classes (y_true) and dimension of y_score is not matching -> error spliting the data
+    # 1491,   # n_classes (y_true) and dimension of y_score is not matching -> error spliting the data
+    # 1492,   # n_classes (y_true) and dimension of y_score is not matching -> error spliting the data
     # 1493,   # 100 classesm TabPFN supports up to 10
-    # 40498,  # n_classes (y_true) and dimension of y_score is not matching
+    # 40498,  # n_classes (y_true) and dimension of y_score is not matching -> error spliting the data
     # 40499,  # 11 classesm TabPFN supports up to 10
     # 41705   # X columns with only one distinct value -> column with one value and NaN &
               # 11 classesm TabPFN supports up to 10
