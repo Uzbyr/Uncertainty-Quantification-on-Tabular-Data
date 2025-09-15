@@ -51,15 +51,16 @@ for subdir, _, files in os.walk(root_folder):
 results.sort(key=lambda x: x[4], reverse=True)
 
 # Print header
-print(f"{'Folder':25} {'Task':15} {'#Num/#Cat':15} {'Train/Val/Test':20} {'ID':10}")
-print("-" * 95)
+# print(f"{'Folder':25} {'Task':15} {'#Num/#Cat':15} {'Train/Val/Test':20} {'ID':10}")
+# print("-" * 95)
 
-# Print rows
-for folder_name, task_type, n_num, n_cat, train_size, val_size, test_size, id in results:
-    print(f"{folder_name[:25]:25} {task_type:15} {f'{n_num}/{n_cat}':15} {f'{train_size}/{val_size}/{test_size}':20} {id:10}")
-
-# print("[", end="")
+# # Print rows
 # for folder_name, task_type, n_num, n_cat, train_size, val_size, test_size, id in results:
-#       print(id, end=",")
-# print("]")
+#     print(f"{folder_name[:25]:25} {task_type:15} {f'{n_num}/{n_cat}':15} {f'{train_size}/{val_size}/{test_size}':20} {id:10}")
+
+print("[", end="")
+for folder_name, task_type, n_num, n_cat, train_size, val_size, test_size, id in results:
+      if train_size <= 10_000:
+          print(id, end=",")
+print("]")
 

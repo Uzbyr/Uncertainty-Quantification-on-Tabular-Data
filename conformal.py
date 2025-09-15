@@ -19,9 +19,11 @@ seeds = [
 ]
 
 # Pick the best available device
-device = torch.device("cuda:0" if torch.cuda.is_available() else (
-    "mps" if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available() else "cpu"
-))
+device = torch.device(
+    "cuda:0"
+    if torch.cuda.is_available()
+    else ("mps" if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available() else "cpu")
+)
 print("Using device:", device)
 
 out_folder = "results"
@@ -30,18 +32,51 @@ if not os.path.exists(out_folder):
 first = False
 
 openml_datasets = [
-        1479,    # hill-valley
-        43946,   # Eye movements
-        15,      # breast-w
-        997,     # Eye balance-scale
-        31,      # credit-g
-        188,     # eucalyptus
+    # 1479, 43946, 15, 997,
+    # 31, 188, 1046, 1471,
+    # 1476, 45060, 4534, 32
+    # 45040, 45074, 1044,
+    # 1053, 1459, 44122,
+    # 45062, 45023, 375,
+    # 4538, 45553, 41972,
+    # 44130, 1496, 1507,
+    # 803, 182, 42889, 44
+    # 1475, 44150, 458, 30,
+    # 1497, 1489, 44124,
+    # 44186, 41146, 44489,
+    # 1037, 42636, 1557,
+    # 28, 1043, 41156 # X columns with only one distinct value
+    # 40708, 40497    # X columns with only one distinct value
+    # 40707, 40713, 40677,
+    # 40678, 3, 46,
+    # 40670,          # high gpu usage
+    # 41145,          # high gpu usage
+    # 45075,          # classes [-1, 1] instead of [0, 1]
+    # 42178,          # y is an object instead of a category
+    # 1589,     # as_frame fails -> ARFF dataset - Compressed Sparse Row
+    # 41144, 41143, 40478,
+    # 44091, 1487, 1548,
+    # 45540, 45539, 45538,
+    # 45537, 45536, 44528,
+    # 36, 1067, 22,
+    # 18, 14, 16, 12,
+    # 41721, 41875, 41882,
+    # 40664, 43442, 45648,
+    # 40646, 42464, 1501,
+    # 23, 1050, 54, 185,
+    # 43895, 1049, 43812,
+    # 1068, 1552, 1444,
+    # 372,    # n_classes (y_true) and dimension of y_score is not matching
+    # 1491,   # n_classes (y_true) and dimension of y_score is not matching
+    # 1492,   # n_classes (y_true) and dimension of y_score is not matching
+    # 1493,   # 100 classesm TabPFN supports up to 10
+    # 40498,  # n_classes (y_true) and dimension of y_score is not matching
+    # 40499,  # 11 classesm TabPFN supports up to 10
+    # 41705   # X columns with only one distinct value -> column with one value and NaN &
+              # 11 classesm TabPFN supports up to 10
+    # 301,    # 2160 features, TabPFN supports up to 500
+    # 20,     # 1648 features, TabPFN supports up to 500
 ]
-
-openml_datasets = [1509,45547,40668,41169,40685,255,]
-# [41027,41843,41865,41763,41718,1220,251,137,4135,184,1481,45067,45064,43889,45578,41671,6,1120,44089,44162,1046,1471,1476,45060,4534,45040,45074,32,1044,1053,1459,372,44122,45062,45023,375,4538,45553,41972,44130,1496,1507,803,42178,182,42889,1475,41145,44150,28,40499,30,1497,1489,44124,44186,41146,45075,40498,44489,44,1037,1043,42636,1557,41156,40708,
-# 40497,40707,40713,40677,40678,3,46,40670,41144,41143,40478,44091,301,1487,1548,45540,45539,45538,45537,45536,36,1067,44528,22,20,18,14,16,12,41721,41875,41882,40664,43442,45648,1491,1492,40646,
-# 1493,1501,1050,23,43895,1049,43812,185,41705,1589,42464,1068,1552,1444,54,458]
 
 # metric_cols = ["accuracy", "f1_score", "cr", "mwc", "sscs"]
 for dataset_id in openml_datasets:
@@ -53,7 +88,7 @@ for dataset_id in openml_datasets:
         # results_all_seeds.extend(results)
         df = pd.DataFrame(results)
         df.to_csv(f"results/{seed}_{dataset_id}.csv", index=False)
-        df.to_csv("results/raw.csv", index=False, header=first, mode='a')
+        df.to_csv("results/raw.csv", index=False, header=first, mode="a")
         first = False
 
     # df_all = pd.DataFrame(results_all_seeds)

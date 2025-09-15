@@ -3,6 +3,7 @@ from typing import Optional
 
 import torch
 import numpy as np
+import pandas as pd
 
 from tabpfn import TabPFNClassifier
 from lightgbm import LGBMClassifier
@@ -11,6 +12,7 @@ from xgboost import XGBClassifier
 from skrub import TableVectorizer
 from tabicl import TabICLClassifier
 
+from scipy.sparse import csr_matrix
 from sklearn.utils import Bunch
 from sklearn.pipeline import make_pipeline
 from sklearn.impute import SimpleImputer
@@ -105,21 +107,31 @@ def clean_col(col):
 
 
 def evaluate_on_openml(dataset_id, device, score="lac", confidence_level=0.90, seed=42):
-    df: Bunch = fetch_openml(data_id=dataset_id, as_frame=True) # type: ignore
+    df: Bunch = fetch_openml(data_id=dataset_id, as_frame='auto') # type: ignore
     X = df.data
+
+    if isinstance(X, csr_matrix):
+        X = pd.DataFrame(X.toarray(), columns=df.feature_names)
+
     float64_cols = X.select_dtypes(np.float64).columns
     X[float64_cols] = X[float64_cols].astype(np.float32)
 
+    cols_to_drop = X.columns[X.nunique() <= 1]
+    if not cols_to_drop.empty:
+        X = X.drop(columns=cols_to_drop) # type: ignore
+
     if df.target.dtype.name == 'category':
-        y = df.target.cat.codes.to_numpy()
+        y = df.target.cat.codes.to_numpy(dtype=int)
+    elif df.target.dtype.name == 'object':
+        y = (df.target == 'Yes').to_numpy(dtype=int)
     else:
-        y = df.target.to_numpy()
+        y = pd.factorize(df.target)[0]
 
     X_train, X_val, X_test, y_train, y_val, y_test = train_conformalize_test_split(
-        X, y, train_size=0.5, conformalize_size=0.3, test_size=0.2, random_state=seed,
+        X, y, train_size=0.5, conformalize_size=0.3, test_size=0.2, random_state=seed, # type: ignore
     )
 
-    vectorizer = TableVectorizer()
+    vectorizer = TableVectorizer(drop_if_constant=True)
     X_train = vectorizer.fit_transform(X_train)
     X_val = vectorizer.transform(X_val)
     X_test = vectorizer.transform(X_test)
